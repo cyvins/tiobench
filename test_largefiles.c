@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software Foundation,
- *  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  
+ *  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
  *
  */
@@ -33,7 +33,8 @@ static const char* versionStr = "v0.4.2";
 
 void print_version()
 {
-        printf("%s\n", versionStr);
+        printf("%s\n\n", versionStr);
+        printf("%s\n\n", CAF_VERSION_STRING);
         exit(0);
 }
 
@@ -59,7 +60,7 @@ int main(int argc, char *argv[])
 
     printf( xstr(TIO_ftruncate) "()'ing large test file to size 0x%jX\n", LARGEFILE_SIZE);
     rc = TIO_ftruncate(fd, LARGEFILE_SIZE); /* pre-allocate space */
-    if(rc != 0) 
+    if(rc != 0)
     {
         perror(xstr(TIO_ftruncate) "() failed");
         exit(1);

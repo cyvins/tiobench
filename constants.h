@@ -1,6 +1,12 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+#define CAF_VERSION "0.1"
+
+#define CAF_VERSION_STRING \
+"Code Aurora Forum Fork Release Version v" CAF_VERSION "\n" \
+"<https://www.codeaurora.org/xwiki/bin/Linux+Filesystems/Tiobench>"
+
 #define KB (1024)
 #define MB (1024*1024)
 #define GB (1024*1024*1024)

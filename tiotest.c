@@ -330,7 +330,8 @@ static char *my_int_to_string(int a)
 
 static void print_help_and_exit()
 {
-	printf("%s\n", versionStr);
+	printf("%s\n\n", versionStr);
+	printf("%s\n\n", CAF_VERSION_STRING);
 
 	printf("Usage: tiotest [options]\n");
 
