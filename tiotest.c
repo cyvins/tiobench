@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software Foundation,
- *  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  
+ *  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
  *
  */
@@ -878,7 +878,7 @@ static void do_test( ThreadTest *test, int testCase, int sequential,
 
 		if (synccount != test->numThreads)
 		{
-			fprintf(stderr, "Unable to start %d threads (started %d)\n", 
+			fprintf(stderr, "Unable to start %d threads (started %d)\n",
 					test->numThreads, synccount);
 			start = 1;
 			wait_for_threads(test);
@@ -1253,7 +1253,7 @@ static void print_results( ThreadTest *d )
 		printf("Tiotest latency results:\n");
 
 		printf(",-------------------------------------------------------------------------.\n");
-		printf("| Item         | Average latency | Maximum latency | %% >%d sec | %% >%d sec |\n", 
+		printf("| Item         | Average latency | Maximum latency | %% >%d sec | %% >%d sec |\n",
 		       LATENCY_STAT1, LATENCY_STAT2);
 		printf("+--------------+-----------------+-----------------+----------+-----------+\n");
 
@@ -1319,7 +1319,7 @@ static int do_pread_operation(int fd, TIO_off_t offset, ThreadData *d)
 		if( rc == -1 ) {
 			perror("Error " xstr(TIO_pread) "()ing to file");
 		} else {
-			fprintf(stderr, "Tried to read %ld bytes from offset " OFFSET_FORMAT " of file %s of length " OFFSET_FORMAT ", but only read %d bytes\n", d->blockSize, offset, d->fileName, d->fileSizeInMBytes*MB, rc);
+			fprintf(stderr, "Tried to read %ld bytes from offset " OFFSET_FORMAT " of file %s of length " OFFSET_FORMAT ", but only read %zd bytes\n", d->blockSize, offset, d->fileName, d->fileSizeInMBytes*MB, rc);
 		}
 
 		return -1;
@@ -1347,7 +1347,7 @@ static int do_pwrite_operation(int fd, TIO_off_t offset, ThreadData *d)
 		if( rc == -1 ) {
 			perror("Error " xstr(TIO_pwrite) "()ing to file");
 		} else {
-			fprintf(stderr, "Tried to write %ld bytes from offset " OFFSET_FORMAT " of file %s of length " OFFSET_FORMAT ", but only wrote %d bytes\n", d->blockSize, offset, d->fileName, d->fileSizeInMBytes*MB, rc);
+			fprintf(stderr, "Tried to write %ld bytes from offset " OFFSET_FORMAT " of file %s of length " OFFSET_FORMAT ", but only wrote %zd bytes\n", d->blockSize, offset, d->fileName, d->fileSizeInMBytes*MB, rc);
 		}
 		return -1;
 	}
@@ -1359,7 +1359,7 @@ static int do_pwrite_operation(int fd, TIO_off_t offset, ThreadData *d)
  * MMAP functions
  */
 
-// 
+//
 // define functions to get the next memory location for the next mmap operation
 //
 
@@ -1392,7 +1392,7 @@ static int do_mmap_read_operation(void *loc, ThreadData *d)
 
 		if(crc != d->bufferCrc)
 		{
-			fprintf(stderr, "Thread(%lu) mmap consistency check failed at 0x%x\n", d->myNumber, (unsigned int)loc);
+			fprintf(stderr, "Thread(%lu) mmap consistency check failed at 0x%016" PRIxPTR "\n", d->myNumber, (uintptr_t)loc);
 			return -1;
 		}
 	}

@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <values.h>
+#include <inttypes.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -83,7 +84,6 @@ typedef off64_t        TIO_off_t;
 #define TIO_ftruncate  ftruncate64
 #define TIO_pread      pread64
 #define TIO_pwrite     pwrite64
-#define OFFSET_FORMAT  "0x%Lx"
 #else
 typedef off_t          TIO_off_t;
 #define TIO_lseek      lseek
@@ -91,9 +91,9 @@ typedef off_t          TIO_off_t;
 #define TIO_ftruncate  ftruncate
 #define TIO_pread      pread
 #define TIO_pwrite     pwrite
-#define OFFSET_FORMAT  "0x%lx"
 #endif
 
+#define OFFSET_FORMAT  "0x%jX"
 
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
 #define MMAP_CHUNK_SIZE 1073741824uLL

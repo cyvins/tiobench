@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    printf( xstr(TIO_ftruncate) "()'ing large test file to size %Lx\n", LARGEFILE_SIZE);
+    printf( xstr(TIO_ftruncate) "()'ing large test file to size 0x%jX\n", LARGEFILE_SIZE);
     rc = TIO_ftruncate(fd, LARGEFILE_SIZE); /* pre-allocate space */
     if(rc != 0) 
     {
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 
     for(offset = (TIO_off_t)0; offset + CHUNK_SIZE <= LARGEFILE_SIZE; offset += CHUNK_SIZE) {
 
-        printf(xstr(TIO_lseek) "()ing to offset %Lx\n", offset);
+        printf(xstr(TIO_lseek) "()ing to offset " OFFSET_FORMAT "\n", offset);
         offset_ret = TIO_lseek(fd, offset, SEEK_SET);
         if (offset_ret != offset) {
             perror("Error " xstr(TIO_lseek) "()ing");
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
         printf("read()ing a chunk of data\n");
         count = read(fd, &data, sizeof(data));
         if (count != sizeof(data)) {
-            fprintf(stderr, "Error read()ing, %d byte(s) read (!= %d)\n", count, sizeof(data));
+            fprintf(stderr, "Error read()ing, %zd byte(s) read (!= %" PRIuPTR ")\n", count, sizeof(data));
             exit(-1);
         }
         if (data != 0) {
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
         printf(xstr(TIO_pread)"()ing a data value\n");
         count = TIO_pread(fd, &data, sizeof(data), offset);
         if (count != sizeof(data)) {
-            fprintf(stderr, "Error " xstr(TIO_pread) "()ing, %d byte(s) read (!= %d)\n", count, sizeof(data));
+            fprintf(stderr, "Error " xstr(TIO_pread) "()ing, %zd byte(s) read (!= %" PRIuPTR ")\n", count, sizeof(data));
             exit(-1);
         }
         if (data != 0) {
@@ -100,12 +100,12 @@ int main(int argc, char *argv[])
         printf(xstr(TIO_pwrite)"()ing a test data value (%x)\n", TEST_DATA1);
         count = TIO_pwrite(fd, &data, sizeof(data), offset);
         if (count != sizeof(data)) {
-            fprintf(stderr, "Error " xstr(TIO_pwrite) "()ing, %d bytes written (!= %d)\n", count, sizeof(data));
+            fprintf(stderr, "Error " xstr(TIO_pwrite) "()ing, %zd bytes written (!= %" PRIuPTR ")\n", count, sizeof(data));
             exit(-1);
         }
         data = 0;
 
-        printf(xstr(TIO_mmap) "()ing chunk of size %Lx at offset %Lx\n", CHUNK_SIZE, offset);
+        printf(xstr(TIO_mmap) "()ing chunk of size 0x%jX at offset " OFFSET_FORMAT "\n", CHUNK_SIZE, offset);
         file_loc = TIO_mmap((caddr_t )0, CHUNK_SIZE,
                  PROT_READ | PROT_WRITE, MAP_SHARED, fd, (TIO_off_t)offset);
         if (file_loc == MAP_FAILED) {
@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
         printf(xstr(TIO_pread)"()ing a data value, checking value == %x\n", TEST_DATA2);
         count = TIO_pread(fd, &data, sizeof(data), offset+sizeof(data));
         if (count != sizeof(data)) {
-            fprintf(stderr, "Error " xstr(TIO_pread) "()ing, %d byte(s) read (!= %d)\n", count, sizeof(data));
+            fprintf(stderr, "Error " xstr(TIO_pread) "()ing, %zd byte(s) read (!= %zu)\n", count, sizeof(data));
             exit(-1);
         }
         if (data != TEST_DATA2) {
