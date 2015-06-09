@@ -1,6 +1,7 @@
 /*
  *    Threaded io test
  *
+ *  Copyright (c) 2015, The Linux Foundation. All rights reserved.
  *  Copyright (C) 1999-2008 Mika Kuoppala <miku at iki.fi>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -23,6 +24,8 @@
 #include "constants.h"
 #include "crc32.h"
 #include <assert.h>
+#include <poll.h>
+
 
 #define WRITE_TEST         0
 #define RANDOM_WRITE_TEST  1
@@ -486,6 +489,7 @@ static void parse_args( ArgumentOptions* args, int argc, char *argv[] )
 				fprintf(stderr, "Wrong test number %d\n", i);
 			/* Go through */
 		}
+
 		case '?':
 		default:
 			fprintf(stderr, "Try 'tiotest -h' for more information\n");
@@ -802,6 +806,33 @@ static void* start_proc( void *data )
 	return NULL;
 }
 
+static void drop_pagecache()
+{
+	int fd, actual_written_size, write_size;
+	char drop_string[] = "3\n";
+
+	/* Drop all the now clean cache and free memory. */
+	fd = open("/proc/sys/vm/drop_caches", O_WRONLY);
+	if (fd < 0) {
+		perror("\n\ndrop_cache open failed!..consider running as root.\n");
+		fprintf(stderr, "\n\nThe tests results are not accurate/trustworthy\n\n");
+		return;
+	}
+
+	write_size = strlen(drop_string);
+	actual_written_size = write(fd, drop_string, write_size);
+
+	if (actual_written_size < 0)
+		perror("drop_cache write failed!");
+	else if (actual_written_size != write_size)
+		fprintf(stderr, "drop_cache write failed actual written_size=%d expected=%d\n",
+			actual_written_size, write_size);
+
+	close(fd);
+	poll(0, 0, 2000); /* Waste time for 2 seconds */
+	printf ("\nSynced and Dropped the pagecache\n\n");
+}
+
 static void do_test( ThreadTest *test, int testCase, int sequential,
 					 struct tt_rusage *t, char *debugMessage )
 {
@@ -827,6 +858,8 @@ static void do_test( ThreadTest *test, int testCase, int sequential,
 		free((int*)child_status);
 		return;
 	}
+
+	drop_pagecache();
 
 	if (sequential)
 		timer_start(t);
