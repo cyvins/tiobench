@@ -609,6 +609,8 @@ static void* do_generic_test(file_io_function io_func,
 		//TIO_off_t current_offset = d->fileOffset;
 		TIO_off_t current_offset = d->fileOffset - d->blockSize; // back-one hack for sequential case
 
+		(*blockCount) += io_ops; // take this out of the for loop, we don't handle errors that well
+
 		while(io_ops--)
 		{
 			struct timeval tv_start, tv_stop;
@@ -624,8 +626,6 @@ static void* do_generic_test(file_io_function io_func,
 			gettimeofday(&tv_stop, NULL);
 			update_latency_info(latencies, tv_start, tv_stop);
 		}
-
-		(*blockCount) += blocks; // take this out of the for loop, we don't handle errors that well
 	}
 
 	fsync(fd);
