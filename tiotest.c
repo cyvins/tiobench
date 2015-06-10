@@ -23,8 +23,10 @@
 
 #include "constants.h"
 #include "crc32.h"
+
 #include <assert.h>
 #include <poll.h>
+#include <getopt.h>
 
 
 #define WRITE_TEST         0
@@ -96,33 +98,34 @@ typedef struct {
 } ThreadTest;
 
 typedef struct {
-	char     path[MAX_PATHS][KBYTE];
-	int      pathsCount;
-	int      fileSizeInMBytes;
-	int      numThreads;
-	int      blockSize;
-	int      numRandomOps;
-	int      verbose;
-	int      terse;
-	int      use_mmap;
-	int      sequentialWriting;
-	int      syncWriting;
-	int	     rawDrives;
-	int      consistencyCheckData;
-	int      showLatency;
-	long	 threadOffset;
-	int	     useThreadOffsetForFirstThread;
+	char path[MAX_PATHS][KBYTE];
+	int  pathsCount;
+	int  fileSizeInMBytes;
+	int  numThreads;
+	int  blockSize;
+	int  numRandomOps;
+	int  verbose;
+	int  terse;
+	int  use_mmap;
+	int  sequentialWriting;
+	int  syncWriting;
+	int  rawDrives;
+	int  consistencyCheckData;
+	int  showLatency;
+	long threadOffset;
+	int  useThreadOffsetForFirstThread;
 
-	int	     testsToRun[TEST_COUNT];
-	int	     runRandomWrite;
-	int	     runRead;
-	int	     runRandomRead;
+	int  testsToRun[TEST_COUNT];
+	int  runRandomWrite;
+	int  runRead;
+	int  runRandomRead;
+	int  do_direct_io;
 
 	/*
 	  Debug level
 	  This should be from 0 - 10
 	*/
-	int      debugLevel;
+	int  debugLevel;
 
 } ArgumentOptions;
 
@@ -378,6 +381,11 @@ static void print_help_and_exit()
 		     my_int_to_string(DEFAULT_DEBUG_LEVEL));
 
 	print_option("-h", "Print this help and exit", 0);
+	printf ("\n=======================================\n");
+	printf ("Additional options:\n");
+	printf("    Option:             [Description]\n\n");
+	print_option("--direct-io", "Do direct io operations (open with O_DIRECT)", 0);
+	printf ("\n=======================================\n\n");
 
 	exit(1);
 }
@@ -386,16 +394,39 @@ static void parse_args( ArgumentOptions* args, int argc, char *argv[] )
 {
 	int c;
 	int once = 0;
+	int option_index = 0;
 
 	while (1)
 	{
-		c = getopt( argc, argv, "f:b:d:t:r:D:k:o:hLRTWSOcM");
+		struct option long_options[] =
+		{
+		  /* These options set a flag. */
+		  {"direct-io", no_argument, &(args->do_direct_io), TRUE},
+		  {0, 0, 0, 0}
+		};
+
+		c = getopt_long( argc, argv, "f:b:d:t:r:D:k:o:hLRTWSOcMP",
+				long_options, &option_index);
 
 		if (c == -1)
 			break;
 
 		switch (c)
 		{
+		case 0:
+			/* If this option set a flag, do nothing else now. */
+			if (long_options[option_index].flag != 0)
+				break;
+
+			fprintf(stderr, "Unhandled option %s",
+				long_options[option_index].name);
+			if (optarg)
+				fprintf(stderr, " with arg %s", optarg);
+			fprintf(stderr, "\n");
+			fprintf(stderr, "Try 'tiotest -h' for more information\n");
+			exit(1);
+			break;
+
 		case 'f':
 			args->fileSizeInMBytes = atoi(optarg);
 			checkIntZero(args->fileSizeInMBytes, "Wrong file size\n");
@@ -523,6 +554,10 @@ static void* do_generic_test(file_io_function io_func,
 	// if sync I/O requested, do it at open time
 	if( args.syncWriting )
 		openFlags |= O_SYNC;
+
+	// if Direct I/O requested, do it at open time
+	if( args.do_direct_io )
+		openFlags |= O_DIRECT;
 
 #ifdef USE_LARGEFILES
 	openFlags |= O_LARGEFILE;
