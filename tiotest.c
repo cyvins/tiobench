@@ -333,9 +333,6 @@ static char *my_int_to_string(int a)
 
 static void print_help_and_exit()
 {
-	printf("%s\n\n", versionStr);
-	printf("%s\n\n", CAF_VERSION_STRING);
-
 	printf("Usage: tiotest [options]\n");
 
 	print_option("-f", "Filesize per thread in MBytes",
@@ -1537,6 +1534,9 @@ int main(int argc, char *argv[])
 
 	for(i = 0; i < TEST_COUNT; i++)
 		args.testsToRun[i] = 1;
+
+	printf("%s", CAF_VERSION_STRING);
+	printf("%s\n\n", versionStr);
 
 	parse_args( &args, argc, argv );
 

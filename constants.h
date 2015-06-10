@@ -4,8 +4,11 @@
 #define CAF_VERSION "0.1"
 
 #define CAF_VERSION_STRING \
+"\nTIOTEST\n" \
 "Code Aurora Forum Fork Release Version v" CAF_VERSION "\n" \
-"<https://www.codeaurora.org/xwiki/bin/Linux+Filesystems/Tiobench>"
+"Copyright (c) 2015, The Linux Foundation. All rights reserved.\n" \
+"<https://www.codeaurora.org/xwiki/bin/Linux+Filesystems/Tiobench> \n\n" \
+"This release is based on :\n"
 
 #define KB (1024)
 #define MB (1024*1024)
