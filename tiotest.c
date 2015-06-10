@@ -533,7 +533,7 @@ static void* do_generic_test(file_io_function io_func,
 
 	fd = open(d->fileName, openFlags, 0600 );
 	if(fd == -1) {
-		fprintf(stderr, "%s: %s\n", strerror(errno), d->fileName);
+		fprintf(stderr, "open failed with %s: %s\n", strerror(errno), d->fileName);
 		return 0;
 	}
 
@@ -940,6 +940,74 @@ static void do_test( ThreadTest *test, int testCase, int sequential,
 	t_log(LEVEL_INFO, "Done!");
 }
 
+static void create_file_of_size (char *filename, TIO_off_t fillsize)
+{
+	int fd;
+	void *buffer = NULL;
+	ssize_t data_remaining, result, write_size;
+	int buffer_size = 1 * MB; /* Alloc 1 MB for faster writes */
+
+	buffer_size = MIN(buffer_size, fillsize);
+
+	buffer = tt_aligned_alloc( buffer_size );
+
+	memset(buffer, 0, buffer_size);
+
+	fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0600 );
+	if(fd == -1) {
+		fprintf(stderr, "open failed with %s: %s\n", strerror(errno), filename);
+		exit(-1);
+	}
+
+	data_remaining = fillsize;
+	while (data_remaining > 0) {
+	       write_size = MIN (buffer_size, data_remaining);
+	       result = write(fd, buffer, write_size);
+	       if (result < 0){
+		       fprintf(stderr, "Write failed with %s: %s\n", strerror(errno), filename);
+		exit(-1);
+	       }
+
+	       if (result == 0) {
+		       errno = -ENOSPC;
+		       exit(-1);
+	       }
+
+	       data_remaining -= result;
+	}
+	fsync(fd);
+	close(fd);
+	tt_aligned_free( buffer, buffer_size );
+}
+
+static void* create_file_thread( void *data )
+{
+	ThreadData *d = (ThreadData *) data;
+	create_file_of_size (d->fileName,
+			     (TIO_off_t)(d->fileSizeInMBytes * MBYTE));
+	return NULL;
+}
+
+static void create_files_for_test (ThreadTest *test)
+{
+	int i;
+
+	printf ("\nStart: Creating the files for testing.\n");
+	for(i = 0; i < test->numThreads; i++) {
+		if( pthread_create(
+				&(test->threads[i].thread),
+				&(test->threads[i].thread_attr),
+				create_file_thread,
+				(void *)&(test->threads[i])))
+		{
+			perror("Error from pthread_create()");
+			exit(-1);
+		}
+	}
+	wait_for_threads(test);
+	printf ("Done: Creating the files for testing.\n");
+}
+
 static void do_tests( ThreadTest *thisTest )
 {
 	struct tt_rusage *timeWrite       = &(thisTest->totalTimeWrite);
@@ -958,6 +1026,8 @@ static void do_tests( ThreadTest *thisTest )
 	if (args.testsToRun[WRITE_TEST])
 		do_test( thisTest, WRITE_TEST, args.sequentialWriting,
 				 timeWrite,  "Waiting write threads to finish...");
+	else
+		create_files_for_test (thisTest);
 
 	/*
 	  RandomWrite testing
