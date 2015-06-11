@@ -1133,6 +1133,7 @@ static void print_results( ThreadTest *d )
 		totalBlocksRandomWrite = 0, totalBlocksRandomRead = 0;
 
 	double read_rate,write_rate,random_read_rate,random_write_rate;
+	double random_write_iops, random_read_iops;
 	struct timeval realtime_write, usrtime_write, systime_write;
 	struct timeval realtime_rwrite, usrtime_rwrite, systime_rwrite;
 	struct timeval realtime_read, usrtime_read, systime_read;
@@ -1342,33 +1343,35 @@ static void print_results( ThreadTest *d )
 
 	write_rate = mbytesWrite / timeval_to_secs(&realtime_write);
 	random_write_rate = mbytesRandomWrite / timeval_to_secs(&realtime_rwrite);
+	random_write_iops = ((double)random_write_rate * MB) / (d->threads[0].blockSize);
 
 	read_rate  = mbytesRead / timeval_to_secs(&realtime_read);
 	random_read_rate  = mbytesRandomRead / timeval_to_secs(&realtime_rread);
+	random_read_iops = ((double)random_read_rate * MB) / (d->threads[0].blockSize);
 
 	printf("Tiotest results for %d concurrent io threads:\n",
 	       d->numThreads);
 
-	printf(",----------------------------------------------------------------------.\n");
-	printf("| Item                  | Time     | Rate         | Usr CPU  | Sys CPU |\n");
-	printf("+-----------------------+----------+--------------+----------+---------+\n");
+	printf(",---------------------------------------------------------------------------------.\n");
+	printf("| Item                  | Time     | Rate          |  IOPS   | Usr CPU  | Sys CPU |\n");
+	printf("+-----------------------+----------+---------------+---------+----------+---------+\n");
 
 	if(totalBlocksWrite)
-		printf("| Write %11.0f MBs | %6.1f s | %7.3f MB/s | %5.1f %%  | %5.1f %% |\n",
+		printf("| Write %11.0f MBs | %6.1f s | %8.3f MB/s |         | %5.1f %%  | %5.1f %% |\n",
 		       mbytesWrite,
 		       timeval_to_secs(&realtime_write),write_rate,
 		       timeval_percentage_of(&usrtime_write, &realtime_write, d->numThreads),
 		       timeval_percentage_of(&systime_write, &realtime_write, d->numThreads) );
 
 	if(totalBlocksRandomWrite)
-		printf("| Random Write %4.0f MBs | %6.1f s | %7.3f MB/s | %5.1f %%  | %5.1f %% |\n",
+		printf("| Random Write %4.0f MBs | %6.1f s | %8.3f MB/s | %7.0f | %5.1f %%  | %5.1f %% |\n",
 		       mbytesRandomWrite,
-		       timeval_to_secs(&realtime_rwrite),random_write_rate,
+		       timeval_to_secs(&realtime_rwrite),random_write_rate, random_write_iops,
 		       timeval_percentage_of(&usrtime_rwrite, &realtime_rwrite, d->numThreads),
 		       timeval_percentage_of(&systime_rwrite, &realtime_rwrite, d->numThreads) );
 
 	if(totalBlocksRead)
-		printf("| Read %12.0f MBs | %6.1f s | %7.3f MB/s | %5.1f %%  | %5.1f %% |\n",
+		printf("| Read %12.0f MBs | %6.1f s | %8.3f MB/s |         | %5.1f %%  | %5.1f %% |\n",
 		       mbytesRead,
 		       timeval_to_secs(&realtime_read),read_rate,
 		       timeval_percentage_of(&usrtime_read, &realtime_read, d->numThreads),
@@ -1376,13 +1379,13 @@ static void print_results( ThreadTest *d )
 
 
 	if(totalBlocksRandomRead)
-		printf("| Random Read %5.0f MBs | %6.1f s | %7.3f MB/s | %5.1f %%  | %5.1f %% |\n",
+		printf("| Random Read %5.0f MBs | %6.1f s | %8.3f MB/s | %7.0f | %5.1f %%  | %5.1f %% |\n",
 		       mbytesRandomRead,
-		       timeval_to_secs(&realtime_rread),random_read_rate,
+		       timeval_to_secs(&realtime_rread),random_read_rate, random_read_iops,
 		       timeval_percentage_of(&usrtime_rread, &realtime_rread, d->numThreads),
 		       timeval_percentage_of(&systime_rread, &realtime_rread, d->numThreads) );
 
-	printf("`----------------------------------------------------------------------'\n");
+	printf("+-----------------------+----------+---------------+---------+----------+---------+\n\n");
 
 	if (args.showLatency)
 	{
