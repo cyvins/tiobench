@@ -1581,6 +1581,7 @@ int main(int argc, char *argv[])
 
 	printf("%s", CAF_VERSION_STRING);
 	printf("%s\n\n", versionStr);
+	printf ("Build time stamp: %s:%s\n\n",__DATE__, __TIME__);
 
 	parse_args( &args, argc, argv );
 
