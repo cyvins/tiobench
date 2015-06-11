@@ -650,13 +650,19 @@ static void* do_generic_test(file_io_function io_func,
 
 			current_offset = (*offset_func)(current_offset, d, &(seed));
 
-			gettimeofday(&tv_start, NULL);
+			/* Only compute latencies if required. */
+			if (args.showLatency)
+				gettimeofday(&tv_start, NULL);
+
 			ret = (*io_func)(fd, current_offset, d);
 			if(ret != 0)
 				exit(ret);
 
-			gettimeofday(&tv_stop, NULL);
-			update_latency_info(latencies, tv_start, tv_stop);
+			if (args.showLatency) {
+				gettimeofday(&tv_stop, NULL);
+				update_latency_info(latencies, tv_start,
+							tv_stop);
+			}
 		}
 	}
 
