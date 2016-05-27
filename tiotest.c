@@ -587,53 +587,42 @@ static void* do_generic_test(file_io_function io_func,
 		/**
 		 * MEMORY-MAPPED OPERATIONS
 		 */
-		unsigned long chunk_num;
-		// rounds the number of mmap chunks up, basically ceiling function
-		TIO_off_t num_mmap_chunks = bytesize/MMAP_CHUNK_SIZE + 1;
+		void *file_loc = NULL;
 
-		for(chunk_num=0; chunk_num < num_mmap_chunks; chunk_num++)
-		{
-			void *file_loc = NULL;
-			long this_chunk_offset = d->fileOffset + chunk_num*MMAP_CHUNK_SIZE;
-			long this_chunk_size = MIN(MMAP_CHUNK_SIZE, (TIO_off_t)bytesize - chunk_num*MMAP_CHUNK_SIZE);
-			long this_chunk_blocks = this_chunk_size / d->blockSize;
-			void *current_loc = NULL;
+		void *current_loc = NULL;
 
-			file_loc=TIO_mmap(NULL,this_chunk_size,PROT_READ|PROT_WRITE,MAP_SHARED,fd,
-					  this_chunk_offset);
-			if(file_loc == MAP_FAILED) {
-				fprintf(stderr, "this_chunk_size=%ld, fd=%d, offset=" OFFSET_FORMAT
-					"\n", this_chunk_size, fd, d->fileOffset);
-				perror("Error " xstr(TIO_mmap) "()ing data file");
-				close(fd);
-				return 0;
-			}
+		(*blockCount) += io_ops; // take this out of the for loop, we don't handle errors that well
 
-			madvise(file_loc, this_chunk_size, madvise_advice);
-
-			current_loc = file_loc - d->blockSize; // back-one hack for sequential case
-			while(io_ops--) {
-				int ret;
-				struct timeval tv_start, tv_stop;
-
-				current_loc = (*loc_func)(file_loc, current_loc, d, &(seed));
-
-				gettimeofday(&tv_start, NULL);
-
-				ret = mmap_func(current_loc, d);
-				if(ret != 0)
-					exit(ret);
-
-				if( args.syncWriting ) msync(current_loc, d->blockSize, MS_SYNC);
-
-				gettimeofday(&tv_stop, NULL);
-				update_latency_info(latencies, tv_start, tv_stop);
-			}
-
-			(*blockCount) += this_chunk_blocks; // take this out of the for loop, we don't handle errors that well
-
-			munmap(file_loc, this_chunk_size);
+		file_loc=TIO_mmap(NULL,bytesize,PROT_READ|PROT_WRITE,MAP_SHARED,fd, 0);
+		if(file_loc == MAP_FAILED) {
+			perror("Error " xstr(TIO_mmap) "()ing data");
+			fprintf(stderr,"file of size %lu", bytesize);
+			close(fd);
+			return 0;
 		}
+		madvise(file_loc, bytesize, madvise_advice);
+
+		current_loc = file_loc - d->blockSize;// back-one hack for sequential case
+
+		while(io_ops--) {
+			int ret;
+			struct timeval tv_start, tv_stop;
+
+			current_loc = (*loc_func)(file_loc, current_loc, d, &(seed));
+
+			gettimeofday(&tv_start, NULL);
+
+			ret = mmap_func(current_loc, d);
+			if(ret != 0)
+				exit(ret);
+
+			if( args.syncWriting ) msync(current_loc, d->blockSize, MS_SYNC);
+
+			gettimeofday(&tv_stop, NULL);
+			update_latency_info(latencies, tv_start, tv_stop);
+		}
+		munmap(file_loc, bytesize);
+
 	} else {
 		/**
 		 * REGULAR I/O OPERATIONS
