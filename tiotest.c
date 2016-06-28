@@ -120,6 +120,8 @@ typedef struct {
 	int  runRead;
 	int  runRandomRead;
 	int  do_direct_io;
+	int  use_random_seed;
+	int  custom_seed;
 
 	/*
 	  Debug level
@@ -385,6 +387,8 @@ static void print_help_and_exit()
 	printf ("Additional options:\n");
 	printf("    Option:             [Description]\n\n");
 	print_option("--direct-io", "Do direct io operations (open with O_DIRECT)", 0);
+	print_option("--random-seed", "Use a random seed for the random generator", 0);
+	print_option("-s", "Custom seed for random generator (Default : 2016)", 0);
 	printf ("\n=======================================\n\n");
 
 	exit(1);
@@ -402,10 +406,11 @@ static void parse_args( ArgumentOptions* args, int argc, char *argv[] )
 		{
 		  /* These options set a flag. */
 		  {"direct-io", no_argument, &(args->do_direct_io), TRUE},
+		  {"random-seed", no_argument, &(args->use_random_seed), TRUE},
 		  {0, 0, 0, 0}
 		};
 
-		c = getopt_long( argc, argv, "f:b:d:t:r:D:k:o:hLRTWSOcMP",
+		c = getopt_long( argc, argv, "f:b:d:t:r:D:k:o:s:hLRTWSOcMP",
 				long_options, &option_index);
 
 		if (c == -1)
@@ -518,6 +523,10 @@ static void parse_args( ArgumentOptions* args, int argc, char *argv[] )
 			/* Go through */
 		}
 
+		case 's':
+			args->custom_seed = atoi(optarg);
+			break;
+
 		case '?':
 		default:
 			fprintf(stderr, "Try 'tiotest -h' for more information\n");
@@ -537,11 +546,10 @@ static void* do_generic_test(file_io_function io_func,
 			     unsigned long *blockCount,
 			     unsigned long io_ops)
 {
-	int     fd;
-	TIO_off_t  blocks=((TIO_off_t)d->fileSizeInMBytes*MBYTE)/d->blockSize;
-	unsigned int seed = get_random_seed();
-
-	int     rc;
+	int fd;
+	TIO_off_t blocks=((TIO_off_t)d->fileSizeInMBytes*MBYTE)/d->blockSize;
+	unsigned int seed;
+	int rc;
 	TIO_off_t  bytesize=blocks*d->blockSize; /* truncates down to BS multiple */
 
 	// for now, always read/write, just easier
@@ -562,6 +570,11 @@ static void* do_generic_test(file_io_function io_func,
 #ifdef USE_LARGEFILES
 	openFlags |= O_LARGEFILE;
 #endif
+
+	if(args.use_random_seed)
+		seed = get_random_seed();
+	else
+		seed = args.custom_seed;
 
 	fd = open(d->fileName, openFlags, 0600 );
 	if(fd == -1) {
@@ -1053,7 +1066,7 @@ static void do_tests( ThreadTest *thisTest )
 	if (args.testsToRun[WRITE_TEST])
 		do_test( thisTest, WRITE_TEST, args.sequentialWriting,
 				 timeWrite,  "Waiting write threads to finish...");
-	else
+	else if(!args.rawDrives)
 		create_files_for_test (thisTest);
 
 	/*
@@ -1564,6 +1577,9 @@ int main(int argc, char *argv[])
 	args.showLatency = TRUE;
 	args.threadOffset = DEFAULT_RAW_OFFSET;
 	args.useThreadOffsetForFirstThread = FALSE;
+	args.do_direct_io = FALSE;
+	args.use_random_seed = FALSE;
+	args.custom_seed = 2016;
 
 	for(i = 0; i < TEST_COUNT; i++)
 		args.testsToRun[i] = 1;
