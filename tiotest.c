@@ -27,6 +27,7 @@
 #include <assert.h>
 #include <poll.h>
 #include <getopt.h>
+#include <fcntl.h>
 
 
 #define WRITE_TEST         0
@@ -122,6 +123,8 @@ typedef struct {
 	int  do_direct_io;
 	int  use_random_seed;
 	int  custom_seed;
+	int  drop_pagecache;
+	int  fadvise;
 
 	/*
 	  Debug level
@@ -385,10 +388,12 @@ static void print_help_and_exit()
 	print_option("-h", "Print this help and exit", 0);
 	printf ("\n=======================================\n");
 	printf ("Additional options:\n");
-	printf("    Option:             [Description]\n\n");
-	print_option("--direct-io", "Do direct io operations (open with O_DIRECT)", 0);
-	print_option("--random-seed", "Use a random seed for the random generator", 0);
-	print_option("-s", "Custom seed for random generator (Default : 2016)", 0);
+	printf("    Option:                 [Description]\n\n");
+	print_option("--direct-io   ", "Do direct io operations (open with O_DIRECT)", 0);
+	print_option("--random-seed ", "Use a random seed for the random generator", 0);
+	print_option("--no-dropcache", "Do not drop the page cache", 0);
+	print_option("--fadvise     ", "Call fadvise on the files", 0);
+	print_option("-s            ", "Custom seed for random generator (Default : 2016)", 0);
 	printf ("\n=======================================\n\n");
 
 	exit(1);
@@ -407,6 +412,8 @@ static void parse_args( ArgumentOptions* args, int argc, char *argv[] )
 		  /* These options set a flag. */
 		  {"direct-io", no_argument, &(args->do_direct_io), TRUE},
 		  {"random-seed", no_argument, &(args->use_random_seed), TRUE},
+		  {"no-dropcache", no_argument, &(args->drop_pagecache), FALSE},
+		  {"fadvise", no_argument, &(args->fadvise), TRUE},
 		  {0, 0, 0, 0}
 		};
 
@@ -551,6 +558,10 @@ static void* do_generic_test(file_io_function io_func,
 	unsigned int seed;
 	int rc;
 	TIO_off_t  bytesize=blocks*d->blockSize; /* truncates down to BS multiple */
+	int fadvise_arg = POSIX_FADV_DONTNEED;
+
+	if (madvise_advice == MADV_RANDOM)
+		fadvise_arg = POSIX_FADV_RANDOM;
 
 	// for now, always read/write, just easier
 	int openFlags = O_RDWR;
@@ -581,6 +592,9 @@ static void* do_generic_test(file_io_function io_func,
 		fprintf(stderr, "open failed with %s: %s\n", strerror(errno), d->fileName);
 		return 0;
 	}
+
+	if(args.fadvise)
+		 posix_fadvise(fd, 0, ((TIO_off_t)d->fileSizeInMBytes*MBYTE), fadvise_arg);
 
 	/* if doing real files, get them pre-allocated in size */
 	if (!args.rawDrives) {
@@ -850,6 +864,14 @@ static void drop_pagecache()
 {
 	int fd, actual_written_size, write_size;
 	char drop_string[] = "3\n";
+	static int drop_count = 0;
+
+	if(!args.drop_pagecache) {
+		if(!drop_count)
+			printf ("\nPage cache was not dropped (used --no-dropcache)\n");
+		drop_count++;
+		return;
+	}
 
 	/* Drop all the now clean cache and free memory. */
 	fd = open("/proc/sys/vm/drop_caches", O_WRONLY);
@@ -1579,6 +1601,8 @@ int main(int argc, char *argv[])
 	args.useThreadOffsetForFirstThread = FALSE;
 	args.do_direct_io = FALSE;
 	args.use_random_seed = FALSE;
+	args.drop_pagecache = TRUE;
+	args.fadvise = FALSE;
 	args.custom_seed = 2016;
 
 	for(i = 0; i < TEST_COUNT; i++)
