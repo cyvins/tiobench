@@ -1,7 +1,7 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#define CAF_VERSION "0.1"
+#define CAF_VERSION "0.2"
 
 #define CAF_VERSION_STRING \
 "\nTIOTEST\n" \
