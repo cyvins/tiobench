@@ -48,3 +48,35 @@ Credits:
 	thread_attr not initialized bug.
 
 	Numerous other contributions from fearless benchmarkers.
+
+
+Build instructions:
+
+	The below steps to compile to cross compile the source for 32bit and 64 bit arm processors
+	Setup tool chain for arm and arch64-arm
+	For example using the linaro toolchain:
+
+	64 bit:
+	
+		http://releases.linaro.org/14.11/components/toolchain/binaries/aarch64-linux-gnu
+	
+	32 bit:
+	
+		http://releases.linaro.org/14.11/components/toolchain/binaries/arm-linux-gnueabi
+
+	Download the tarball and extract the toolchain
+	Then add the tool chain to your $PATH.
+  
+	To compile :
+
+	64 bit:
+
+	$ cd tiobench
+	$ make CC=aarch64-linux-gnu-gcc LINK=aarch64-linux-gnu-gcc LDFLAGS=-static tiotest
+  
+	32 bit:
+
+	$ cd tiobench
+	$ make CC=arm-linux-gnueabihf-gcc LINK=arm-linux-gnueabihf-gcc LDFLAGS=-static tiotest
+
+	This should generate the tiotest binary in the same folder as your source.
